@@ -145,7 +145,7 @@ public class StreamingJob {
             Result res = null;
             int count = 0;
             for (Result r : results) {
-              // always use the latest element or the one w/ the join
+              // always use the latest element
               res = r;
               count++;
             }
