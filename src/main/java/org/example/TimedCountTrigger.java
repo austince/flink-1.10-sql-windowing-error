@@ -32,8 +32,8 @@ public class TimedCountTrigger extends Trigger<Object, TimeWindow> {
   }
 
   public TriggerResult onElement(Object element, long timestamp, TimeWindow window, TriggerContext ctx) throws Exception {
-
     ctx.registerProcessingTimeTimer(window.maxTimestamp());
+    ctx.registerEventTimeTimer(window.maxTimestamp());
 
     ReducingState<Long> count = ctx.getPartitionedState(this.stateDesc);
     count.add(1L);
@@ -50,7 +50,9 @@ public class TimedCountTrigger extends Trigger<Object, TimeWindow> {
 
 
   public TriggerResult onEventTime(long time, TimeWindow window, TriggerContext ctx) {
-    return TriggerResult.CONTINUE;
+    return time == window.maxTimestamp()
+        ? TriggerResult.FIRE
+        : TriggerResult.CONTINUE;
   }
 
 
@@ -61,6 +63,7 @@ public class TimedCountTrigger extends Trigger<Object, TimeWindow> {
 
   public void clear(TimeWindow window, TriggerContext ctx) {
     ctx.deleteProcessingTimeTimer(window.maxTimestamp());
+    ctx.deleteEventTimeTimer(window.maxTimestamp());
     ctx.getPartitionedState(this.stateDesc).clear();
   }
 

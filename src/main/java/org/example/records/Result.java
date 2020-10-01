@@ -13,6 +13,8 @@ public class Result implements Serializable {
   public String name;
   public String description;
 
+  public Result() {}
+
   @Override
   public boolean equals(Object obj) {
     if (this == obj) {

@@ -22,9 +22,13 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.time.Time;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks;
+import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
+import org.apache.flink.streaming.api.watermark.Watermark;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
@@ -33,6 +37,7 @@ import org.apache.flink.table.api.java.StreamTableEnvironment;
 import org.apache.flink.table.descriptors.Csv;
 import org.apache.flink.table.descriptors.FileSystem;
 import org.apache.flink.table.descriptors.Schema;
+import org.apache.flink.table.planner.plan.nodes.calcite.WatermarkAssigner;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 import org.example.records.DescriptionRow;
@@ -41,6 +46,7 @@ import org.example.records.NameRow;
 import org.example.records.Result;
 
 import java.nio.file.Paths;
+import javax.annotation.Nullable;
 
 /**
  * Skeleton for a Flink Streaming Job.
@@ -83,6 +89,8 @@ public class StreamingJob {
         .useBlinkPlanner()
         .build();
 
+    env.setStreamTimeCharacteristic(TimeCharacteristic.IngestionTime);
+
     final StreamTableEnvironment tEnv = StreamTableEnvironment.create(env, tableEnvSettings);
 
     TableConfig tConfig = tEnv.getConfig();
@@ -116,6 +124,13 @@ public class StreamingJob {
             resultTable,
             Row.class
         )
+//        .assignTimestampsAndWatermarks(new AscendingTimestampExtractor<Tuple2<Boolean, Row>>() {
+//          @Override
+//          public long extractAscendingTimestamp(Tuple2<Boolean, Row> element) {
+//            // processing time! but also event time!
+//            return System.currentTimeMillis();
+//          }
+//        })
         .flatMap((FlatMapFunction<Tuple2<Boolean, Row>, Result>) (tup, out) -> {
           if (!tup.f0) { // only gather appends
             return;
